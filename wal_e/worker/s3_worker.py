@@ -178,7 +178,7 @@ def format_kib_per_second(start, finish, amount_in_bytes):
         return 'NaN'
 
 
-def do_partition_put(backup_s3_prefix, tpart, rate_limit):
+def do_partition_put(backup_s3_prefix, tpart, rate_limit, tmp_dir):
     """
     Synchronous version of the s3-upload wrapper
 
@@ -186,7 +186,7 @@ def do_partition_put(backup_s3_prefix, tpart, rate_limit):
     logger.info(msg='beginning volume compression',
                 detail='Building volume {name}.'.format(name=tpart.name))
 
-    with tempfile.NamedTemporaryFile(mode='rwb') as tf:
+    with tempfile.NamedTemporaryFile(mode='rwb',dir=tmp_dir) as tf:
         compression_p = popen_sp([LZOP_BIN, '--stdout'],
                                  stdin=subprocess.PIPE, stdout=tf,
                                  bufsize=BUFSIZE_HT)
@@ -272,7 +272,7 @@ def do_partition_put(backup_s3_prefix, tpart, rate_limit):
             .format(s3_url=s3_url, kib_per_second=kib_per_second))
 
 
-def do_lzop_s3_put(s3_url, local_path):
+def do_lzop_s3_put(s3_url, local_path, tmp_dir):
     """
     Compress and upload a given local path.
 
@@ -287,7 +287,7 @@ def do_lzop_s3_put(s3_url, local_path):
     assert not s3_url.endswith('.lzo')
     s3_url += '.lzo'
 
-    with tempfile.NamedTemporaryFile(mode='rwb') as tf:
+    with tempfile.NamedTemporaryFile(mode='rwb',dir=tmp_dir) as tf:
         compression_p = popen_sp([LZOP_BIN, '--stdout', local_path], stdout=tf,
                                  bufsize=BUFSIZE_HT)
         compression_p.wait()

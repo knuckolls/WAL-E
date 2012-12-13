@@ -139,6 +139,12 @@ def main(argv=None):
                         'Can also be defined via environment variable '
                         'WALE_S3_PREFIX')
 
+    parser.add_argument('--tmp-dir',
+                        default='/tmp/',
+                        help='Temporary directory to use for compression.  '
+                        'Can also be defined via environment variable '
+                        'WALE_TMP_DIR')
+
     subparsers = parser.add_subparsers(title='subcommands',
                                        dest='subcommand')
 
@@ -282,7 +288,13 @@ def main(argv=None):
     else:
         aws_access_key_id = args.aws_access_key_id
 
-    backup_cxt = s3_operator.S3Backup(aws_access_key_id, secret_key, s3_prefix)
+    
+    tmp_dir = os.getenv('WALE_TMP_DIR')
+
+    if tmp_dir is None:
+      tmp_dir = args.tmp_dir 
+
+    backup_cxt = s3_operator.S3Backup(aws_access_key_id, secret_key, s3_prefix, tmp_dir)
 
     subcommand = args.subcommand
 
@@ -331,7 +343,7 @@ def main(argv=None):
                 sys.exit(1)
         elif subcommand == 'wal-push':
             external_program_check([LZOP_BIN])
-            backup_cxt.wal_s3_archive(args.WAL_SEGMENT)
+            backup_cxt.wal_s3_archive(args.WAL_SEGMENT, tmp_dir)
         elif subcommand == 'delete':
             # Set up pruning precedence, optimizing for *not* deleting data
             #

@@ -45,9 +45,10 @@ class S3Backup(object):
     """
 
     def __init__(self,
-                 aws_access_key_id, aws_secret_access_key, s3_prefix):
+                 aws_access_key_id, aws_secret_access_key, s3_prefix, tmp_dir):
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
+        self.tmp_dir = tmp_dir
 
         # Canonicalize the s3 prefix by stripping any trailing slash
         self.s3_prefix = s3_prefix.rstrip('/')
@@ -96,7 +97,7 @@ class S3Backup(object):
 
         sys.stdout.flush()
 
-    def _s3_upload_pg_cluster_dir(self, start_backup_info, pg_cluster_dir,
+    def _s3_upload_pg_cluster_dir(self, start_backup_info, pg_cluster_dir, tmp_dir,
                                   version, pool_size, rate_limit=None):
         """
         Upload to s3_url_prefix from pg_cluster_dir
@@ -207,7 +208,7 @@ class S3Backup(object):
                 total_size += tpart.total_member_size
                 uploads.append(pool.apply_async(
                         s3_worker.do_partition_put,
-                        [backup_s3_prefix, tpart, per_process_limit]))
+                        [backup_s3_prefix, tpart, per_process_limit, tmp_dir]))
         finally:
             while uploads:
                 uploads.pop().get()
@@ -333,7 +334,7 @@ class S3Backup(object):
                 start_backup_info = controldata.last_xlog_file_name_and_offset()
                 version = controldata.pg_version()
             uploaded_to, expanded_size_bytes = self._s3_upload_pg_cluster_dir(
-                start_backup_info, data_directory, version=version, *args, **kwargs)
+                start_backup_info, data_directory, tmp_dir, version=version, *args, **kwargs)
             upload_good = True
         finally:
             if not upload_good:
@@ -383,7 +384,7 @@ class S3Backup(object):
             # exception never will get raised.
             raise UserCritical('could not complete backup process')
 
-    def wal_s3_archive(self, wal_path):
+    def wal_s3_archive(self, wal_path, tmp_dir):
         """
         Uploads a WAL file to S3
 
@@ -399,7 +400,8 @@ class S3Backup(object):
             '{0}/wal_{1}/{2}'.format(self.s3_prefix,
                                      FILE_STRUCTURE_VERSION,
                                      wal_file_name),
-            wal_path)
+            wal_path,
+            tmp_dir)
 
     def wal_s3_restore(self, wal_name, wal_destination):
         """
