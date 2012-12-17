@@ -333,6 +333,7 @@ def main(argv=None):
             while_offline = args.while_offline
             backup_cxt.database_s3_backup(
                 args.PG_CLUSTER_DIRECTORY,
+                tmp_dir,
                 rate_limit=rate_limit,
                 while_offline=while_offline,
                 pool_size=args.pool_size)

@@ -298,7 +298,7 @@ class S3Backup(object):
         p.join(raise_error=True)
 
 
-    def database_s3_backup(self, data_directory, *args, **kwargs):
+    def database_s3_backup(self, data_directory, tmp_dir, *args, **kwargs):
         """
         Uploads a PostgreSQL file cluster to S3
 
